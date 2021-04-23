@@ -26,9 +26,12 @@ bool LeftInput = false;
 
 const unsigned long EventInterval = 1000;
 unsigned long PreviousTime = 0;
-unsigned long  test = millis();
 
 // Initialize Volume Type Modulation
+
+// Initalize Slouch Counter
+
+int Count = 0;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,6 +62,37 @@ void AlarmSwitch() {
 
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void TargetAngleColor() {
+  for (int p = 0; p < 10; p++) {
+    CircuitPlayground.setPixelColor(p, 53, 198, 242);
+  }
+  delay(500);
+  CircuitPlayground.clearPixels();
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void SlouchAngleColor() {
+  for (int p = 0; p < 10; p++) {
+    CircuitPlayground.setPixelColor(p, 247, 16, 0);
+  }
+delay(500);
+  CircuitPlayground.clearPixels();
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SlouchCounter() {
+
+  Count++;
+  Serial.print("Slouch count is currently ");
+  Serial.print(Count);
+  Serial.println();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void loop() {
   // Compute current angle
   CurrentAngle = RAD2DEG * asin(-CircuitPlayground.motionZ() / GRAV);
@@ -101,41 +135,42 @@ void loop() {
 
 
 
-  unsigned long CurrentTime = millis();
+  //  unsigned long CurrentTime = millis();
 
-  if (CurrentTime - PreviousTime >= 500) {
-    Serial.println(Press);
-    Serial.println(lastButtonState);
-    Serial.println(LeftInput);
-    Serial.println(PrevPressTime);
-    PreviousTime = CurrentTime;
-  }
+  //  if (CurrentTime - PreviousTime >= 500) {
+  //    Serial.println(Press);
+  //    Serial.println(lastButtonState);
+  //    Serial.println(LeftInput);
+  //    Serial.println(PrevPressTime);
+  //   PreviousTime = CurrentTime;
+  //  }
 
-
+  /////////////////////////////////////
 
 
 
 
   // Set target angle on button press
-  if ((LeftInput) || (CircuitPlayground.rightButton())) {
+  if (LeftInput) {
     TargetAngle = CurrentAngle;
 
     Serial.print("Target Angle is ");
     Serial.print(TargetAngle);
     Serial.println();
 
-    CircuitPlayground.playTone(500, 30);
+    CircuitPlayground.playTone(500, 50);
+    TargetAngleColor();
 
   }
-  //   Print Current Angle to Serial Monitor
+  //     Print Current Angle to Serial Monitor
 
-  // unsigned long CurrentTime = millis();
+  unsigned long CurrentTime = millis();
 
-  //  if (CurrentTime - PreviousTime >= EventInterval) {
-  //    Serial.println(CurrentAngle);
+  if (CurrentTime - PreviousTime >= EventInterval) {
+    Serial.println(CurrentAngle);
 
-  //   PreviousTime = CurrentTime;
-  //  }
+    PreviousTime = CurrentTime;
+  }
 
 
 
@@ -151,8 +186,13 @@ void loop() {
   if (slouch) {
     // Check how long bad posture has been occuring
     if (millis() - SlouchStart > SLOUCH_TIME) {
-      // Activate Alarm
+      // Activate Alarm and Counter
+
       AlarmSwitch();
+      SlouchAngleColor();
+      SlouchCounter();
     }
   }
+
+
 }
