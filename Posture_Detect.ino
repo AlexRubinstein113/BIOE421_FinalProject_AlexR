@@ -15,12 +15,19 @@ float TargetAngle;
 unsigned long SlouchStart;
 bool slouch;
 
-// Initialize Button Functionality
-bool ButtonState;
-bool lastButtonState = false;
-unsigned long PrevPressTime = 0;
-const unsigned long PressTime = 1000;
+// Initialize Left Button Functionality
+bool ButtonLState;
+bool lastButtonLState = false;
+unsigned long PrevPressLeftTime = 0;
+const unsigned long PressLeftTime = 1000;
 bool LeftInput = false;
+
+// Initialize Right Button Funcionality
+bool ButtonRState;
+bool lastButtonRState = false;
+unsigned long PrevPressRightTime = 0;
+const unsigned long PressRightTime = 5000;
+bool RightInput = false;
 
 // Initialize Serial Print Times
 
@@ -33,6 +40,11 @@ unsigned long PreviousTime = 0;
 
 int Count = 0;
 
+// Initialize Prone Detection
+bool prone;
+unsigned long proneTime;
+const unsigned long proneinterval = 3000;
+bool ProneDetState = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 void setup() {
@@ -57,6 +69,7 @@ void AlarmSwitch() {
   } else {
     CircuitPlayground.playTone(600, 2000);
   }
+
 }
 
 
@@ -64,6 +77,8 @@ void AlarmSwitch() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TargetAngleColor() {
+  // Device flashes blue when target angle is set
+
   for (int p = 0; p < 10; p++) {
     CircuitPlayground.setPixelColor(p, 53, 198, 242);
   }
@@ -73,10 +88,12 @@ void TargetAngleColor() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SlouchAngleColor() {
+  //  Device flashes red when slouch occurs
+
   for (int p = 0; p < 10; p++) {
     CircuitPlayground.setPixelColor(p, 247, 16, 0);
   }
-delay(500);
+  delay(300);
   CircuitPlayground.clearPixels();
 
 }
@@ -84,6 +101,8 @@ delay(500);
 ///////////////////////////////////////////////////////////////////////////////
 
 void SlouchCounter() {
+
+  // Device counts number of slouch alarms and prints to serial monitor
 
   Count++;
   Serial.print("Slouch count is currently ");
@@ -98,26 +117,27 @@ void loop() {
   CurrentAngle = RAD2DEG * asin(-CircuitPlayground.motionZ() / GRAV);
 
 
+
   /////////////////////////////////////
 
-  // Hold Button Down Functionality
-  bool Press = CircuitPlayground.leftButton();
+  // Hold Left Button Down Functionality
+  bool PressLeft = CircuitPlayground.leftButton();
 
 
-  if (Press != lastButtonState) {
-    if (Press == true) {
-      PrevPressTime = millis();
-      ButtonState = true;
+  if (PressLeft != lastButtonLState) {
+    if (PressLeft == true) {
+      PrevPressLeftTime = millis();
+      ButtonLState = true;
     }
     else {
-      ButtonState = false;
+      ButtonLState = false;
     }
 
-    lastButtonState = Press;
+    lastButtonLState = PressLeft;
 
   }
-  if (ButtonState) {
-    if ((millis() - PrevPressTime) >= PressTime ) {
+  if (ButtonLState) {
+    if ((millis() - PrevPressLeftTime) >= PressLeftTime ) {
       LeftInput = true;
     }
   }
@@ -126,24 +146,67 @@ void loop() {
   }
 
   if (LeftInput == true) {
-    if ((millis() - PrevPressTime) >= PressTime ) {
-      ButtonState = false;
+    if ((millis() - PrevPressLeftTime) >= PressLeftTime ) {
+      ButtonLState = false;
+    }
+  }
+
+  //  unsigned long CurrentTime = millis();
+
+  //  if (CurrentTime - PreviousTime >= 500) {
+  //    Serial.println(PressLeft);
+  //    Serial.println(lastButtonState);
+  //    Serial.println(LeftInput);
+  //    Serial.println(PrevPressLeftTime);
+  //   PreviousTime = CurrentTime;
+  //  }
+
+
+  /////////////////////////////////////
+
+  // Hold Right Button Down Functionality
+
+  bool PressRight = CircuitPlayground.rightButton();
+
+
+  if (PressRight != lastButtonRState) {
+    if (PressRight == true) {
+      PrevPressRightTime = millis();
+      ButtonRState = true;
+    }
+    else {
+      ButtonRState = false;
+    }
+
+    lastButtonRState = PressRight;
+
+  }
+  if (ButtonRState) {
+    if ((millis() - PrevPressRightTime) >= PressRightTime ) {
+      RightInput = true;
+    }
+  }
+  else {
+    RightInput = false;
+  }
+
+
+
+  if (RightInput == true) {
+    ProneDetState = !ProneDetState;
+    if (ProneDetState) {
+      CircuitPlayground.playTone(600, 300);
+    }
+    else {
+      CircuitPlayground.playTone(300, 300);
+    }
+    if ((millis() - PrevPressRightTime) >= PressRightTime ) {
+      ButtonRState = false;
     }
   }
 
 
 
-
-
-  //  unsigned long CurrentTime = millis();
-
-  //  if (CurrentTime - PreviousTime >= 500) {
-  //    Serial.println(Press);
-  //    Serial.println(lastButtonState);
-  //    Serial.println(LeftInput);
-  //    Serial.println(PrevPressTime);
-  //   PreviousTime = CurrentTime;
-  //  }
 
   /////////////////////////////////////
 
@@ -173,7 +236,6 @@ void loop() {
   }
 
 
-
   // Check if posture is poor
   if (CurrentAngle - TargetAngle > POSTURE_ANGLE) {
     if (!slouch) SlouchStart = millis();
@@ -194,5 +256,22 @@ void loop() {
     }
   }
 
+  /////////////////////////////////////
 
+  // Prone Detection
+
+  if (ProneDetState) {
+    if (CircuitPlayground.motionX() >= -5 && CircuitPlayground.motionX() <= 5) {
+      if (!prone) proneTime = millis();
+      prone = true;
+    } else {
+      prone = false;
+    }
+
+    if (prone) {
+      if (millis() - proneTime > proneinterval) {
+        CircuitPlayground.playTone(900, 1000);
+      }
+    }
+  }
 }
