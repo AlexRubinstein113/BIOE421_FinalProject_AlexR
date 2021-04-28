@@ -10,6 +10,8 @@
 #define GRAV                 9.80665   // gravity (m/s^2)
 #define RAD2DEG              52.29578  // convert radians to degrees
 
+
+// Initialize Slouch Functionality
 float CurrentAngle;
 float TargetAngle;
 unsigned long SlouchStart;
@@ -34,7 +36,6 @@ bool RightInput = false;
 const unsigned long EventInterval = 1000;
 unsigned long PreviousTime = 0;
 
-// Initialize Volume Type Modulation
 
 // Initalize Slouch Counter
 
@@ -65,9 +66,9 @@ void AlarmSwitch() {
   bool slideSwitch = CircuitPlayground.slideSwitch();
 
   if (slideSwitch) {
-    CircuitPlayground.playTone(800, 500);
+    CircuitPlayground.playTone(800, 500);  // if switch is set to right, play shorter and higher tone
   } else {
-    CircuitPlayground.playTone(600, 2000);
+    CircuitPlayground.playTone(600, 2000); // if switch is set to left, play longer and lower tone
   }
 
 }
@@ -80,7 +81,7 @@ void TargetAngleColor() {
   // Device flashes blue when target angle is set
 
   for (int p = 0; p < 10; p++) {
-    CircuitPlayground.setPixelColor(p, 53, 198, 242);
+    CircuitPlayground.setPixelColor(p, 53, 198, 242); // set all pixels to blue color
   }
   delay(500);
   CircuitPlayground.clearPixels();
@@ -91,7 +92,7 @@ void SlouchAngleColor() {
   //  Device flashes red when slouch occurs
 
   for (int p = 0; p < 10; p++) {
-    CircuitPlayground.setPixelColor(p, 247, 16, 0);
+    CircuitPlayground.setPixelColor(p, 247, 16, 0); // set all pixels to red color
   }
   delay(300);
   CircuitPlayground.clearPixels();
@@ -124,28 +125,28 @@ void loop() {
   bool PressLeft = CircuitPlayground.leftButton();
 
 
-  if (PressLeft != lastButtonLState) {
-    if (PressLeft == true) {
-      PrevPressLeftTime = millis();
+  if (PressLeft != lastButtonLState) {   // if the button state is changed
+    if (PressLeft == true) {             // if the button state is pressed
+      PrevPressLeftTime = millis();      // start button press counter
       ButtonLState = true;
     }
     else {
       ButtonLState = false;
     }
 
-    lastButtonLState = PressLeft;
+    lastButtonLState = PressLeft;      // Set button state for next cycle
 
   }
-  if (ButtonLState) {
-    if ((millis() - PrevPressLeftTime) >= PressLeftTime ) {
-      LeftInput = true;
+  if (ButtonLState) {             // if button is still pressed down
+    if ((millis() - PrevPressLeftTime) >= PressLeftTime ) {   // if button is pressed down for specified period of time
+      LeftInput = true;  // Send input from button press
     }
   }
   else {
     LeftInput = false;
   }
 
-  if (LeftInput == true) {
+  if (LeftInput == true) {  // immediately set button state to false after output goes through
     if ((millis() - PrevPressLeftTime) >= PressLeftTime ) {
       ButtonLState = false;
     }
@@ -193,15 +194,15 @@ void loop() {
 
 
   if (RightInput == true) {
-    ProneDetState = !ProneDetState;
+    ProneDetState = !ProneDetState;  // switch on or off prone detection state with successive outputs
     if (ProneDetState) {
-      CircuitPlayground.playTone(600, 300);
+      CircuitPlayground.playTone(600, 300);  // play higher tone if prone detection is turned on
     }
     else {
-      CircuitPlayground.playTone(300, 300);
+      CircuitPlayground.playTone(300, 300);  // play lower tone if prone detection is turned off
     }
     if ((millis() - PrevPressRightTime) >= PressRightTime ) {
-      ButtonRState = false;
+      ButtonRState = false; // reset right button state
     }
   }
 
@@ -214,15 +215,15 @@ void loop() {
 
 
   // Set target angle on button press
-  if (LeftInput) {
-    TargetAngle = CurrentAngle;
+  if (LeftInput) {  
+    TargetAngle = CurrentAngle;  // set current angle as target angle
 
-    Serial.print("Target Angle is ");
+    Serial.print("Target Angle is ");  // print current angle to serial monitor
     Serial.print(TargetAngle);
     Serial.println();
 
-    CircuitPlayground.playTone(500, 50);
-    TargetAngleColor();
+    CircuitPlayground.playTone(500, 50); // play tone when sngle is set
+    TargetAngleColor(); // Activate neopixels when target angle is set
 
   }
   //     Print Current Angle to Serial Monitor
@@ -237,22 +238,22 @@ void loop() {
 
 
   // Check if posture is poor
-  if (CurrentAngle - TargetAngle > POSTURE_ANGLE) {
-    if (!slouch) SlouchStart = millis();
-    slouch = true;
+  if (CurrentAngle - TargetAngle > POSTURE_ANGLE) { // if posture angle is more than set number of degrees from target angle
+    if (!slouch) SlouchStart = millis(); // activate slouch alarm timer 
+    slouch = true; // set slouch state to true
   } else {
     slouch = false;
   }
 
   // If there is bad posture
-  if (slouch) {
+  if (slouch) { // if there is slouching
     // Check how long bad posture has been occuring
-    if (millis() - SlouchStart > SLOUCH_TIME) {
+    if (millis() - SlouchStart > SLOUCH_TIME) { // if alarm timer has surpassed set slouch grace period duration
       // Activate Alarm and Counter
 
-      AlarmSwitch();
-      SlouchAngleColor();
-      SlouchCounter();
+      AlarmSwitch(); // activate auditory alarm 
+      SlouchAngleColor(); // activate visual alarm
+      SlouchCounter(); // add slouch instance to slouch counter
     }
   }
 
@@ -260,17 +261,17 @@ void loop() {
 
   // Prone Detection
 
-  if (ProneDetState) {
-    if (CircuitPlayground.motionX() >= -5 && CircuitPlayground.motionX() <= 5) {
-      if (!prone) proneTime = millis();
-      prone = true;
+  if (ProneDetState) { // prone detection is activated 
+    if (CircuitPlayground.motionX() >= -5 && CircuitPlayground.motionX() <= 5) { // if device is oriented in position that indicates user is prone
+      if (!prone) proneTime = millis(); // start prone alarm timer
+      prone = true; // set prone state as true
     } else {
       prone = false;
     }
 
-    if (prone) {
-      if (millis() - proneTime > proneinterval) {
-        CircuitPlayground.playTone(900, 1000);
+    if (prone) { // if user is prone
+      if (millis() - proneTime > proneinterval) { // if prone alarm timer has surpassed set grace period 
+        CircuitPlayground.playTone(900, 1000); // activate auditory alarm
       }
     }
   }
